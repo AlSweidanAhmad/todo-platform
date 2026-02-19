@@ -3,7 +3,7 @@ Pydantic schemas for Todo entity.
 Request/response DTOs with validation.
 """
 
-from pydantic import BaseModel, Field, constr
+from pydantic import BaseModel, ConfigDict, Field, constr
 from typing import Optional
 from datetime import datetime
 
@@ -12,7 +12,7 @@ class TodoCreate(BaseModel):
     title: constr(min_length=1, max_length=200, strip_whitespace=True) = Field(
         ...,
         description="Todo title, 1-200 characters",
-        example="Buy groceries"
+        json_schema_extra={"example": "Buy groceries"},
     )
 
 class TodoUpdate(BaseModel):
@@ -33,12 +33,13 @@ class TodoOut(BaseModel):
     done: bool = Field(..., description="Completion status")
     created_at: datetime = Field(..., description="Creation timestamp (ISO 8601)")
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": 1,
                 "title": "Buy groceries",
                 "done": False,
-                "created_at": "2026-02-12T10:30:00"
+                "created_at": "2026-02-12T10:30:00",
             }
         }
+    )
