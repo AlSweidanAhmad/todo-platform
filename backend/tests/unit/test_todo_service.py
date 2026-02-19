@@ -1,0 +1,81 @@
+import pytest
+from fastapi import HTTPException
+
+from app.schemas.todo import TodoCreate, TodoUpdate
+
+
+class TestCreateTodo:
+    def test_create_valid(self, service):
+        payload = TodoCreate(title="Buy milk")
+
+        result = service.create(payload)
+
+        assert result.id == 1
+        assert result.title == "Buy milk"
+        assert result.done is False
+        assert result.created_at is not None
+
+    def test_create_trims_whitespace(self, service):
+        payload = TodoCreate(title="  Buy milk  ")
+
+        result = service.create(payload)
+
+        assert result.title == "Buy milk"
+
+    def test_create_empty_title_rejected(self):
+        with pytest.raises(Exception):
+            TodoCreate(title="")
+
+    def test_create_whitespace_only_title_rejected(self):
+        with pytest.raises(Exception):
+            TodoCreate(title="   ")
+
+    def test_create_title_too_long_rejected(self):
+        with pytest.raises(Exception):
+            TodoCreate(title="a" * 201)
+
+    def test_create_increments_id(self, service):
+        first = service.create(TodoCreate(title="First"))
+        second = service.create(TodoCreate(title="Second"))
+
+        assert first.id == 1
+        assert second.id == 2
+
+
+class TestUpdateTodo:
+    def test_toggle_done(self, service):
+        created = service.create(TodoCreate(title="Task"))
+
+        updated = service.update(created.id, TodoUpdate(done=True))
+
+        assert updated.done is True
+        assert updated.title == "Task"
+
+    def test_update_title(self, service):
+        created = service.create(TodoCreate(title="Old"))
+
+        updated = service.update(created.id, TodoUpdate(title="New"))
+
+        assert updated.title == "New"
+        assert updated.done is False
+
+    def test_update_invalid_id_returns_404(self, service):
+        with pytest.raises(HTTPException) as exc_info:
+            service.update(999, TodoUpdate(done=True))
+
+        assert exc_info.value.status_code == 404
+
+
+class TestDeleteTodo:
+    def test_delete_existing(self, service):
+        created = service.create(TodoCreate(title="Task"))
+
+        service.delete(created.id)
+
+        assert service.get_all() == []
+
+    def test_delete_invalid_id_returns_404(self, service):
+        with pytest.raises(HTTPException) as exc_info:
+            service.delete(999)
+
+        assert exc_info.value.status_code == 404
