@@ -22,3 +22,8 @@ LERNGUIDE.md
 *.db-journal
 *.db-shm
 *.db-wal
+
+
+
+# Claude
+.claude/
